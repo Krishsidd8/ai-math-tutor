@@ -6,6 +6,7 @@ import torch
 import sympy as sp
 from sympy import Eq, simplify, factor, solve
 from sympy.parsing.latex import parse_latex
+from flask_cors import CORS
 
 # ======== Load OCR Model ============ #
 from model_definitions import OCRModel, tokenizer, transform, predict
@@ -17,6 +18,7 @@ model.eval()
 
 # ======== Flask Setup =============== #
 app = Flask(__name__)
+CORS(app)
 
 # ======== SymPy-Based Math Steps ==== #
 def get_sympy_steps(latex_input):
