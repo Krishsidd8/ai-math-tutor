@@ -1,0 +1,95 @@
+const darkModeToggle = document.getElementById('darkModeToggle');
+const body = document.body;
+const imageInput = document.getElementById('imageInput');
+const solveBtn = document.getElementById('solveBtn');
+const chatSection = document.getElementById('chatSection');
+const uploadBox = document.getElementById('uploadBox');
+
+let uploadedImageURL = null;
+
+function updateToggleText() {
+  if (body.classList.contains('dark-mode')) {
+    darkModeToggle.textContent = '☀️ Light Mode';
+  } else {
+    darkModeToggle.textContent = '🌙 Dark Mode';
+  }
+}
+
+darkModeToggle.addEventListener('click', () => {
+  body.classList.toggle('dark-mode');
+  updateToggleText();
+});
+
+updateToggleText();
+
+// Click box to open file dialog
+uploadBox.addEventListener('click', () => {
+  imageInput.click();
+});
+
+// Optional: Handle drag over styling
+uploadBox.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadBox.classList.add('dragover');
+});
+
+uploadBox.addEventListener('dragleave', () => {
+  uploadBox.classList.remove('dragover');
+});
+
+uploadBox.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadBox.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    imageInput.files = files; // Trigger change event
+    console.log('Dropped file:', files[0]);
+  }
+});
+
+
+imageInput.addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    uploadedImageURL = e.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+solveBtn.addEventListener('click', () => {
+  if (!imageInput.files[0]) {
+    alert("Please upload an image.");
+    return;
+  }
+
+  const file = imageInput.files[0];
+  const formData = new FormData();
+  formData.append("image", file);
+
+  fetch("http://localhost:5000/solve", {
+    method: "POST",
+    body: formData,
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      alert("Error: " + data.error);
+      return;
+    }
+
+    // Render output in chat
+    const botMsg = document.createElement('div');
+    botMsg.className = 'chat-message bot';
+    botMsg.innerHTML = `
+      <strong>Predicted LaTeX:</strong> ${data.latex}<br/>
+      <strong>Step-by-Step Solution:</strong>
+      <ol>${data.steps.map(s => `<li>${s.explanation}<br/><code>${s.symbolic_step}</code></li>`).join('')}</ol>
+    `;
+    chatSection.appendChild(botMsg);
+    chatSection.scrollTop = chatSection.scrollHeight;
+  })
+  .catch(err => alert("Failed to solve: " + err));
+});
