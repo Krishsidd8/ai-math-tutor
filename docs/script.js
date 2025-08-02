@@ -68,8 +68,7 @@ solveBtn.addEventListener('click', () => {
   const file = imageInput.files[0];
   const formData = new FormData();
   formData.append("image", file);
-
-  fetch("http://localhost:5000/solve", {
+fetch('https://ai-math-tutor-x2rp.onrender.com', {
     method: "POST",
     body: formData,
   })
