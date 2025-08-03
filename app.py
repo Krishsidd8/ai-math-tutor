@@ -1,4 +1,3 @@
-# app.py
 from flask import Flask, request, jsonify
 from PIL import Image
 import io
@@ -8,13 +7,9 @@ from sympy import Eq, simplify, factor, solve
 from sympy.parsing.latex import parse_latex
 from flask_cors import CORS
 
-# ======== Load OCR Model ============ #
+# ======== Import Support Code ============ #
 from model_definitions import OCRModel, tokenizer, transform, predict
 from config import device, checkpoint_path
-
-model = OCRModel(len(tokenizer.vocab)).to(device)
-model.load_state_dict(torch.load(checkpoint_path, map_location=device)['model'])
-model.eval()
 
 # ======== Flask Setup =============== #
 app = Flask(__name__)
@@ -73,8 +68,20 @@ def solve_equation():
 
     try:
         image = Image.open(io.BytesIO(request.files['image'].read())).convert('L')
+
+        # ======== Lazy Load Model ============ #
+        model = OCRModel(len(tokenizer.vocab)).to(device)
+        state = torch.load(checkpoint_path, map_location=device)
+        model.load_state_dict(state['model'])
+        model.eval()
+
+        # ======== Prediction and Processing === #
         latex = predict(image, model, tokenizer.t2i)
         steps = get_sympy_steps(latex)
+
+        # ======== Free Memory ============ #
+        del model, image, state
+        torch.cuda.empty_cache()
 
         return jsonify({
             "latex": latex,
