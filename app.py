@@ -11,6 +11,8 @@ import gc
 # ======== Import Support Code ============ #
 from model_definitions import OCRModel, tokenizer, transform, predict
 from config import device, checkpoint_path
+import os
+import urllib.request
 
 # ======== Flask Setup =============== #
 app = Flask(__name__)
@@ -18,7 +20,14 @@ CORS(app)
 
 # ======== Load Model Once ============ #
 model = OCRModel(len(tokenizer.vocab)).to(device)
-state = torch.load(checkpoint_path, map_location=device)
+if not os.path.exists(checkpoint_path):
+    print("Downloading model checkpoint...")
+    urllib.request.urlretrieve(
+        "https://drive.google.com/uc?export=download&id=1IttUFMaSxgyEbunjwvnOntFtcWWWuQdh",
+        checkpoint_path
+    )
+    print("Model downloaded successfully.")
+state = torch.load(checkpoint_path, map_location=device, weights_only=False)
 model.load_state_dict(state['model'])
 model.eval()
 
@@ -70,11 +79,6 @@ def get_sympy_steps(latex_input):
     except Exception as e:
         raise ValueError(f"SymPy failed to solve equation: {str(e)}")
 
-# ======== Home Route ============ #
-@app.route("/", methods=["GET"])
-def home():
-    return "AI Math Tutor API is running. Use the /solve endpoint."
-
 # ======== Solve Route =========== #
 @app.route("/solve", methods=["POST"])
 def solve_equation():
@@ -88,7 +92,8 @@ def solve_equation():
         image = image.resize((512, 384))
 
         # ✅ Predict LaTeX
-        latex = predict(image, model, tokenizer.t2i)
+        with torch.no_grad():
+            latex = predict(image, model, tokenizer.t2i)
 
         # ✅ Solve using SymPy
         steps = get_sympy_steps(latex)
