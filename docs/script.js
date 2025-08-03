@@ -47,6 +47,8 @@ uploadBox.addEventListener('drop', (e) => {
   }
 });
 
+const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+
 imageInput.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -54,9 +56,25 @@ imageInput.addEventListener('change', (event) => {
   const reader = new FileReader();
   reader.onload = function(e) {
     uploadedImageURL = e.target.result;
+
+    imagePreviewContainer.innerHTML = `<img src="${uploadedImageURL}" alt="Uploaded Preview" />`;
   };
   reader.readAsDataURL(file);
 });
+
+uploadBox.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadBox.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  if (files.length > 0) {
+    imageInput.files = files;
+
+    // 👇 Trigger change handler manually
+    const event = new Event('change');
+    imageInput.dispatchEvent(event);
+  }
+});
+
 
 solveBtn.addEventListener('click', () => {
   if (!imageInput.files[0]) {
