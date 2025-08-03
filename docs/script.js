@@ -47,7 +47,6 @@ uploadBox.addEventListener('drop', (e) => {
   }
 });
 
-
 imageInput.addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
@@ -68,7 +67,9 @@ solveBtn.addEventListener('click', () => {
   const file = imageInput.files[0];
   const formData = new FormData();
   formData.append("image", file);
-fetch('https://ai-math-tutor-x2rp.onrender.com', {
+
+  // ✅ Correct API endpoint
+  fetch('https://ai-math-tutor-x2rp.onrender.com/solve', {
     method: "POST",
     body: formData,
   })
@@ -85,7 +86,7 @@ fetch('https://ai-math-tutor-x2rp.onrender.com', {
     botMsg.innerHTML = `
       <strong>Predicted LaTeX:</strong> ${data.latex}<br/>
       <strong>Step-by-Step Solution:</strong>
-      <ol>${data.steps.map(s => `<li>${s.explanation}<br/><code>${s.symbolic_step}</code></li>`).join('')}</ol>
+      <ol>${data.steps.map(s => `<li>${s.step}<br/><code>${s.symbolic}</code></li>`).join('')}</ol>
     `;
     chatSection.appendChild(botMsg);
     chatSection.scrollTop = chatSection.scrollHeight;
