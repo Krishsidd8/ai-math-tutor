@@ -59,6 +59,10 @@ def get_sympy_steps(latex_input):
 
     except Exception as e:
         raise ValueError(f"SymPy failed to solve equation: {str(e)}")
+    
+@app.route("/", methods=["GET"])
+def home():
+    return "AI Math Tutor API is running. Use the /solve endpoint."
 
 # ======== API Route ================= #
 @app.route("/solve", methods=["POST"])
