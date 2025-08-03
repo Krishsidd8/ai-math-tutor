@@ -37,16 +37,6 @@ uploadBox.addEventListener('dragleave', () => {
   uploadBox.classList.remove('dragover');
 });
 
-uploadBox.addEventListener('drop', (e) => {
-  e.preventDefault();
-  uploadBox.classList.remove('dragover');
-  const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    imageInput.files = files; // Trigger change event
-    console.log('Dropped file:', files[0]);
-  }
-});
-
 const imagePreviewContainer = document.getElementById('imagePreviewContainer');
 
 imageInput.addEventListener('change', (event) => {
