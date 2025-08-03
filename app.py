@@ -105,3 +105,13 @@ def solve_equation():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+from flask import send_from_directory
+
+@app.route("/docs/<path:filename>")
+def serve_docs(filename):
+    return send_from_directory("docs", filename)
+
+@app.route("/")
+def serve_index():
+    return send_from_directory("docs", "index.html")
