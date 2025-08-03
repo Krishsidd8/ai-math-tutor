@@ -6,6 +6,7 @@ import sympy as sp
 from sympy import Eq, simplify, factor, solve
 from sympy.parsing.latex import parse_latex
 from flask_cors import CORS
+import gc
 
 # ======== Import Support Code ============ #
 from model_definitions import OCRModel, tokenizer, transform, predict
@@ -15,6 +16,12 @@ from config import device, checkpoint_path
 app = Flask(__name__)
 CORS(app)
 
+# ======== Load Model Once ============ #
+model = OCRModel(len(tokenizer.vocab)).to(device)
+state = torch.load(checkpoint_path, map_location=device)
+model.load_state_dict(state['model'])
+model.eval()
+
 # ======== SymPy-Based Math Steps ==== #
 def get_sympy_steps(latex_input):
     try:
@@ -23,7 +30,10 @@ def get_sympy_steps(latex_input):
             expr = Eq(expr, 0)
 
         lhs, rhs = expr.lhs, expr.rhs
-        var = list(expr.free_symbols)[0]
+        symbols = list(expr.free_symbols)
+        if not symbols:
+            raise ValueError("No variable found in equation.")
+        var = symbols[0]
 
         steps = []
 
@@ -59,12 +69,13 @@ def get_sympy_steps(latex_input):
 
     except Exception as e:
         raise ValueError(f"SymPy failed to solve equation: {str(e)}")
-    
+
+# ======== Home Route ============ #
 @app.route("/", methods=["GET"])
 def home():
     return "AI Math Tutor API is running. Use the /solve endpoint."
 
-# ======== API Route ================= #
+# ======== Solve Route =========== #
 @app.route("/solve", methods=["POST"])
 def solve_equation():
     if 'image' not in request.files:
@@ -73,18 +84,18 @@ def solve_equation():
     try:
         image = Image.open(io.BytesIO(request.files['image'].read())).convert('L')
 
-        # ======== Lazy Load Model ============ #
-        model = OCRModel(len(tokenizer.vocab)).to(device)
-        state = torch.load(checkpoint_path, map_location=device)
-        model.load_state_dict(state['model'])
-        model.eval()
+        # 🔽 Optional: downsample to reduce memory usage
+        image = image.resize((512, 384))
 
-        # ======== Prediction and Processing === #
+        # ✅ Predict LaTeX
         latex = predict(image, model, tokenizer.t2i)
+
+        # ✅ Solve using SymPy
         steps = get_sympy_steps(latex)
 
-        # ======== Free Memory ============ #
-        del model, image, state
+        # 🧹 Free memory
+        del image
+        gc.collect()
         torch.cuda.empty_cache()
 
         return jsonify({
