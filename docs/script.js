@@ -77,7 +77,7 @@ solveBtn.addEventListener('click', () => {
   formData.append("image", file);
 
   // ✅ Correct API endpoint
-  fetch('https://ai-math-tutor-x2rp.onrender.com/solve', {
+  fetch('https://ai-math-tutor-production.up.railway.app/solve', {
     method: "POST",
     body: formData,
   })

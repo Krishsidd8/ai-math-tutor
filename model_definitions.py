@@ -28,7 +28,10 @@ class LatexTokenizer:
     def decode(self, ids):
         return ' '.join(self.vocab[i] for i in ids if self.vocab[i] not in self.specials)
 
-tokenizer = LatexTokenizer()
+import pickle
+
+with open("tokenizer.pkl", "rb") as f:
+    tokenizer = pickle.load(f)
 
 class OCRModel(nn.Module):
     def __init__(self, vocab_size, hidden_dim=256):
@@ -74,3 +77,5 @@ def predict(img, model, vocab, max_len=60):
             break
 
     return tokenizer.decode(seq.squeeze().tolist())
+
+print("Tokenizer vocab size:", len(tokenizer.vocab))
