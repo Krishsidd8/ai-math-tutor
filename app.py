@@ -9,8 +9,8 @@ from flask_cors import CORS
 import gc
 
 # ======== Import Support Code ============ #
-from model_definitions import OCRModel, tokenizer, transform, predict
-from config import device, checkpoint_path
+from model_definitions import OCRModel, transform, predict, load_tokenizer
+from config import device, checkpoint_path, tokenizer_path
 import os
 import urllib.request
 
@@ -18,8 +18,17 @@ import urllib.request
 app = Flask(__name__)
 CORS(app)
 
-# ======== Load Model Once ============ #
+# ======== Load Tokenizer & Model Once ============ #
+tokenizer = load_tokenizer(tokenizer_path)
+
 model = OCRModel(len(tokenizer.vocab)).to(device)
+if not os.path.exists(checkpoint_path):
+    print("Downloading model checkpoint...")
+    urllib.request.urlretrieve(
+        "https://drive.google.com/uc?export=download&id=1IttUFMaSxgyEbunjwvnOntFtcWWWuQdh",
+        checkpoint_path
+    )
+    print("Model downloaded successfully.")
 state = torch.load(checkpoint_path, map_location=device, weights_only=False)
 model.load_state_dict(state['model'])
 model.eval()
@@ -80,18 +89,13 @@ def solve_equation():
 
     try:
         image = Image.open(io.BytesIO(request.files['image'].read())).convert('L')
-
-        # 🔽 Optional: downsample to reduce memory usage
         image = image.resize((512, 384))
 
-        # ✅ Predict LaTeX
         with torch.no_grad():
-            latex = predict(image, model, tokenizer.t2i)
+            latex = predict(image, model, tokenizer)
 
-        # ✅ Solve using SymPy
         steps = get_sympy_steps(latex)
 
-        # 🧹 Free memory
         del image
         gc.collect()
         torch.cuda.empty_cache()
@@ -103,7 +107,7 @@ def solve_equation():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
+
 from flask import send_from_directory
 
 @app.route("/docs/<path:filename>")

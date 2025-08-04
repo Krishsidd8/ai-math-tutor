@@ -1,8 +1,8 @@
-# model_definitions.py
 import torch
 import torch.nn as nn
 from torchvision import transforms
 from PIL import Image
+import pickle
 
 max_height, max_width = 384, 512
 
@@ -28,10 +28,9 @@ class LatexTokenizer:
     def decode(self, ids):
         return ' '.join(self.vocab[i] for i in ids if self.vocab[i] not in self.specials)
 
-import pickle
-
-with open("tokenizer.pkl", "rb") as f:
-    tokenizer = pickle.load(f)
+def load_tokenizer(path="tokenizer.pkl"):
+    with open(path, "rb") as f:
+        return pickle.load(f)
 
 class OCRModel(nn.Module):
     def __init__(self, vocab_size, hidden_dim=256):
@@ -60,8 +59,10 @@ class OCRModel(nn.Module):
 def generate_square_subsequent_mask(sz):
     return torch.triu(torch.full((sz, sz), float('-inf')), diagonal=1)
 
-def predict(img, model, vocab, max_len=60):
+def predict(img, model, tokenizer, max_len=60):
     model.eval()
+    vocab = tokenizer.t2i
+
     if isinstance(img, torch.Tensor):
         img = img.unsqueeze(0)
     else:
@@ -77,5 +78,3 @@ def predict(img, model, vocab, max_len=60):
             break
 
     return tokenizer.decode(seq.squeeze().tolist())
-
-print("Tokenizer vocab size:", len(tokenizer.vocab))
