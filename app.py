@@ -9,7 +9,7 @@ from flask_cors import CORS
 import gc
 
 # ======== Import Support Code ============ #
-from model_definitions import OCRModel, transform, predict, load_tokenizer
+from model_definitions import OCRModel, load_tokenizer, transform, predict
 from config import device, checkpoint_path, tokenizer_path
 import os
 import urllib.request
@@ -19,7 +19,7 @@ app = Flask(__name__)
 CORS(app)
 
 # ======== Load Tokenizer & Model Once ============ #
-tokenizer = load_tokenizer(tokenizer_path)
+tokenizer = load_tokenizer("tokenizer.pkl")
 
 model = OCRModel(len(tokenizer.vocab)).to(device)
 if not os.path.exists(checkpoint_path):
